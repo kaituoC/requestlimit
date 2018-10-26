@@ -27,6 +27,7 @@ import java.util.*;
 @Service
 public class RequestService {
     private static final Logger logger = LoggerFactory.getLogger(RequestService.class);
+    private int tempCount = 0;
 
     @Autowired
     RequestLimit requestLimit;
@@ -53,7 +54,7 @@ public class RequestService {
         } else {
             logger.error("tasks.isEmpty!!!");
         }
-//        在tasks运行期间，获取对应用户的实时点击、曝光数据等实时规则数据
+//        在tasks运行期间，获取对应用户的实时点击、曝光数据等实时规则数据, 需要考虑 task.isEmpty
         RealTimeStatus realTimeStatus = getUserStatus(content, requestableDsp);
         logger.info("realTimeStatus={}", realTimeStatus.toString());
 //        获取广告tasks结果集
@@ -75,9 +76,10 @@ public class RequestService {
             fillAd(resultList, content);
         }
 
-//        处理结果集数据(添加金币，设置空曝光等)，记录结果数据
+//        处理结果集数据(添加金币，设置空曝光等)，记录结果数据，需要考虑 resultList.isEmpty, realTimeStatus.isEmpty
         resultHandle(resultList, realTimeStatus);
 
+        logger.info("resultList={}", resultList);
         return resultList;
     }
 
@@ -90,22 +92,30 @@ public class RequestService {
     private void resultHandle(LinkedList<JSONObject> resultList, RealTimeStatus realTimeStatus) {
         Random random = new Random();
         for (JSONObject jo : resultList) {
-            String dsp = jo.getString("dsp");
+            String dsp = jo.getString("source");
             if (realTimeStatus.getUserClickMap().getOrDefault(dsp, 0) < Constants.DAILY_USER_CLICK_MIN_LIMIT) {
                 if (random.nextInt(100) < 50) {
                     jo.put("coin", 5 + random.nextInt(5));
+                    logger.info("1.0 add coin,dsp={} coin={}", dsp, jo.getInteger("coin"));
                 } else {
                     jo.put("coin", 0);
+                    logger.info("1.5 add coin,dsp={} coin={}", dsp, jo.getInteger("coin"));
                 }
             } else if (realTimeStatus.getUserClickMap().getOrDefault(dsp, 0) > Constants.DAILY_USER_CLICK_MAX_LIMIT) {
                 jo.put("backup", true);
+                logger.info("2.0 add coin,dsp={} backup={}", dsp, jo.getBoolean("backup"));
             } else {
                 if (realTimeStatus.getDspClickMap().get(dsp) * 10000 / realTimeStatus.getDspInViewMap().get(dsp) < Variables.getInstance().getDspConfigMap().get(dsp).getCtr()) {
                     if (random.nextInt(100) < 5) {
                         jo.put("coin", 5 + random.nextInt(5));
+                        logger.info("3.0 add coin,dsp={} coin={}", dsp, jo.getInteger("coin"));
+                    } else {
+                        jo.put("coin", 0);
+                        logger.info("3.5 add coin,dsp={} coin={}", dsp, jo.getInteger("coin"));
                     }
                 } else {
                     jo.put("coin", 0);
+                    logger.info("4.0 add coin,dsp={} coin={}", dsp, jo.getInteger("coin"));
                 }
             }
         }
@@ -135,11 +145,12 @@ public class RequestService {
         realTimeStatus.setDeviceId(content.getDeviceId());
         realTimeStatus.setImei(content.getImei());
         for (String dsp : requestableDsp) {
-            realTimeStatus.getDspInViewMap().put(dsp, random.nextInt(10));
-            realTimeStatus.getDspClickMap().put(dsp, random.nextInt(10));
-            realTimeStatus.getUserClickMap().put(dsp, random.nextInt(10));
-            realTimeStatus.getUserInViewMap().put(dsp, random.nextInt(10));
+            realTimeStatus.getDspInViewMap().put(dsp, tempCount);
+            realTimeStatus.getDspClickMap().put(dsp, tempCount);
+            realTimeStatus.getUserClickMap().put(dsp, tempCount);
+            realTimeStatus.getUserInViewMap().put(dsp, tempCount);
         }
+        tempCount++;
         return realTimeStatus;
     }
 

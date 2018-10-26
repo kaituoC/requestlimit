@@ -25,7 +25,7 @@ public class ITaskC implements ITask {
     @Override
     public void submit() {
         JSONObject jo = new JSONObject();
-        jo.put("source", Constants.B);
+        jo.put("source", Constants.C);
         jo.put("adType", this.adType);
         resultList.add(jo);
     }
