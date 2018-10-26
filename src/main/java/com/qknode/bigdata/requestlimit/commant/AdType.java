@@ -7,5 +7,5 @@ package com.qknode.bigdata.requestlimit.commant;
  * Time: 17:00
  */
 public enum AdType {
-    FEED,BANNER,SPLASH
+    BANNER,SPLASH,FEED_SMALL_IMAGE,FEED_MULTI_IMAGE,FEED_BIG_IMAGE,
 }

@@ -10,6 +10,8 @@ import java.util.Map;
  * @date 2018-10-18
  */
 public class Constants {
+    public static final int DAILY_USER_CLICK_MIN_LIMIT = 2;
+    public static final int DAILY_USER_CLICK_MAX_LIMIT = 5;
     public static final String A = "a";
     public static final String B = "b";
     public static final String C = "c";
