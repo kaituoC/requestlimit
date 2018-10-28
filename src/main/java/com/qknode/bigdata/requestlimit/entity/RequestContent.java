@@ -16,6 +16,7 @@ public class RequestContent {
     private String androidId;
     private String imei;
     private String verCode;
+    private String os;
     private int requireNum;
 
     public RequestContent(HttpServletRequest request) {
@@ -23,6 +24,7 @@ public class RequestContent {
         this.androidId = StringUtils.defaultString(request.getParameter("androidId"), "");
         this.imei = StringUtils.defaultString(request.getParameter("imei"), "");
         this.verCode = StringUtils.defaultString(request.getParameter("verCode"), "");
+        this.os = StringUtils.defaultString(request.getParameter("os"), "");
         String numStr = StringUtils.defaultString(request.getParameter("requireNum"), "1");
         if (NumberUtils.isParsable(numStr)) {
             this.requireNum = NumberUtils.createInteger(numStr);

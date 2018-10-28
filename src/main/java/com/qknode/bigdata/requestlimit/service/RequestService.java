@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.qknode.bigdata.requestlimit.commant.AdType;
 import com.qknode.bigdata.requestlimit.commant.Constants;
 import com.qknode.bigdata.requestlimit.commant.Variables;
+import com.qknode.bigdata.requestlimit.entity.DspConfig;
 import com.qknode.bigdata.requestlimit.entity.RequestContent;
 import com.qknode.bigdata.requestlimit.entity.RealTimeStatus;
 import com.qknode.bigdata.requestlimit.limit.RequestLimit;
@@ -32,18 +33,21 @@ public class RequestService {
     @Autowired
     RequestLimit requestLimit;
 
-    public LinkedList<JSONObject> process(HttpServletRequest request, AdType adType) {
-        LinkedList<JSONObject> resultList = new LinkedList<>();
+    @Autowired
+    ResultHandle resultHandle;
+
+    public List<JSONObject> process(HttpServletRequest request, AdType adType) {
+        List<JSONObject> dataList = new LinkedList<>();
         if (request == null || request.getParameterMap().isEmpty()) {
             logger.error("request is null or empty!");
-            return resultList;
+            return dataList;
         }
         RequestContent content = new RequestContent(request);
 //        获取对应版本、对应广告类型可用的dsp列表
-        List<String> onlineDsp = getOnlineDsp(content, adType);
-        logger.info("onlineDsp={}", onlineDsp);
+        List<String> dspList = buildDspList(content, adType);
+        logger.info("dspList={}", dspList);
 //        根据控制规则过滤dsp，得到可请求的dsp列表(规则对应数据存储在内存中，10分钟更新一次)
-        List<String> requestableDsp = requestLimit.getRequestableDsp(onlineDsp, content);
+        List<String> requestableDsp = buildRequestableDsp(dspList, content);
         logger.info("requestableDsp={}", requestableDsp);
 //        获取可请求dsp列表对应的task任务，并提交tasks
         List<ITask> tasks = getTasks(content, adType, requestableDsp);
@@ -55,7 +59,7 @@ public class RequestService {
             logger.error("tasks.isEmpty!!!");
         }
 //        在tasks运行期间，获取对应用户的实时点击、曝光数据等实时规则数据, 需要考虑 task.isEmpty
-        RealTimeStatus realTimeStatus = getUserStatus(content, requestableDsp);
+        RealTimeStatus realTimeStatus = buildUserStatus(content, requestableDsp);
         logger.info("realTimeStatus={}", realTimeStatus.toString());
 //        获取广告tasks结果集
         for (ITask task : tasks) {
@@ -63,7 +67,7 @@ public class RequestService {
             if (apply.isPresent()) {
                 List<JSONObject> entries = apply.get();
                 if (!entries.isEmpty()) {
-                    resultList.addAll(entries);
+                    dataList.addAll(entries);
                 } else {
                     logger.error("adEntries.isEmpty");
                 }
@@ -72,63 +76,31 @@ public class RequestService {
             }
         }
 //        根据结果集个数填补空余广告位
-        if (resultList.size() < content.getRequireNum()) {
-            fillAd(resultList, content);
+        if (dataList.size() < content.getRequireNum()) {
+            fillAd(dataList, content, requestableDsp, realTimeStatus);
         }
 
-//        处理结果集数据(添加金币，设置空曝光等)，记录结果数据，需要考虑 resultList.isEmpty, realTimeStatus.isEmpty
-        resultHandle(resultList, realTimeStatus);
-
+//        处理结果集数据(添加金币，设置空曝光等)，记录结果数据，需要考虑 dataList.isEmpty, realTimeStatus.isEmpty
+        List<JSONObject> resultList = resultHandle.handle(dataList, realTimeStatus, content, adType);
         logger.info("resultList={}", resultList);
-        return resultList;
-    }
 
-    /**
-     * 处理结果集
-     *
-     * @param resultList
-     * @param realTimeStatus
-     */
-    private void resultHandle(LinkedList<JSONObject> resultList, RealTimeStatus realTimeStatus) {
-        Random random = new Random();
-        for (JSONObject jo : resultList) {
-            String dsp = jo.getString("source");
-            if (realTimeStatus.getUserClickMap().getOrDefault(dsp, 0) < Constants.DAILY_USER_CLICK_MIN_LIMIT) {
-                if (random.nextInt(100) < 50) {
-                    jo.put("coin", 5 + random.nextInt(5));
-                    logger.info("1.0 add coin,dsp={} coin={}", dsp, jo.getInteger("coin"));
-                } else {
-                    jo.put("coin", 0);
-                    logger.info("1.5 add coin,dsp={} coin={}", dsp, jo.getInteger("coin"));
-                }
-            } else if (realTimeStatus.getUserClickMap().getOrDefault(dsp, 0) > Constants.DAILY_USER_CLICK_MAX_LIMIT) {
-                jo.put("backup", true);
-                logger.info("2.0 add coin,dsp={} backup={}", dsp, jo.getBoolean("backup"));
-            } else {
-                if (realTimeStatus.getDspClickMap().get(dsp) * 10000 / realTimeStatus.getDspInViewMap().get(dsp) < Variables.getInstance().getDspConfigMap().get(dsp).getCtr()) {
-                    if (random.nextInt(100) < 5) {
-                        jo.put("coin", 5 + random.nextInt(5));
-                        logger.info("3.0 add coin,dsp={} coin={}", dsp, jo.getInteger("coin"));
-                    } else {
-                        jo.put("coin", 0);
-                        logger.info("3.5 add coin,dsp={} coin={}", dsp, jo.getInteger("coin"));
-                    }
-                } else {
-                    jo.put("coin", 0);
-                    logger.info("4.0 add coin,dsp={} coin={}", dsp, jo.getInteger("coin"));
-                }
-            }
-        }
+        return resultList;
     }
 
     /**
      * 填充广告
      *
-     * @param resultList
+     * @param dataList
      * @param content
+     * @param requestableDsp
+     * @param realTimeStatus
      */
-    private void fillAd(LinkedList<JSONObject> resultList, RequestContent content) {
+    private void fillAd(List<JSONObject> dataList, RequestContent content, List<String> requestableDsp, RealTimeStatus realTimeStatus) {
+        int fillSize = content.getRequireNum() - dataList.size();
+        Map<String, DspConfig> dspConfigMap = Variables.getInstance().getDspConfigMap();
+        for (int i = 0; i < fillSize; i++) {
 
+        }
     }
 
     /**
@@ -138,8 +110,7 @@ public class RequestService {
      * @param requestableDsp
      * @return
      */
-    private RealTimeStatus getUserStatus(RequestContent content, List<String> requestableDsp) {
-        Random random = new Random();
+    private RealTimeStatus buildUserStatus(RequestContent content, List<String> requestableDsp) {
         RealTimeStatus realTimeStatus = new RealTimeStatus();
         realTimeStatus.setAndroidId(content.getAndroidId());
         realTimeStatus.setDeviceId(content.getDeviceId());
@@ -181,23 +152,48 @@ public class RequestService {
     }
 
     /**
+     * 构建可以请求的DSP列表
+     *
+     * @param dspList
+     * @param content
+     * @return
+     */
+    private List<String> buildRequestableDsp(List<String> dspList, RequestContent content) {
+        List<String> requestableDsp = requestLimit.getRequestableDsp(dspList, content);
+        return requestableDsp;
+    }
+
+    /**
      * 获取对应版本的可用dsp列表
      *
      * @param content
      * @param adType
      * @return
      */
-    private List<String> getOnlineDsp(RequestContent content, AdType adType) {
-        List<String> onlineDsp = new LinkedList<>();
+    private List<String> buildDspList(RequestContent content, AdType adType) {
+        List<String> dspList = new LinkedList<>();
         if (AdType.SPLASH.equals(adType)) {
-            if (VersionUtils.compareVersion(content.getVerCode(), "1.5.3") >= 0) {
-                onlineDsp = Constants.ONLINE_DSP;
+            for (String dsp : Constants.ONLINE_DSP_SPLASH) {
+                DspConfig dspConfig = Variables.getInstance().getDspConfigMap().get(dsp);
+                if (Constants.PLATFORM_IOS.equalsIgnoreCase(content.getOs())) {
+                    if (VersionUtils.compareVersion(content.getVerCode(), dspConfig.getIosMinVersion()) >= 0) {
+                        if (!dspConfig.getIosExcludeVersionList().contains(content.getVerCode())) {
+                            dspList.add(dsp);
+                        }
+                    }
+                } else {
+                    if (VersionUtils.compareVersion(content.getVerCode(), dspConfig.getAndroidMinVersion()) >= 0) {
+                        if (!dspConfig.getAndroidExcludeVersionList().contains(content.getVerCode())) {
+                            dspList.add(dsp);
+                        }
+                    }
+                }
             }
         } else if (AdType.BANNER.equals(adType)) {
 
         } else {
 
         }
-        return onlineDsp;
+        return dspList;
     }
 }

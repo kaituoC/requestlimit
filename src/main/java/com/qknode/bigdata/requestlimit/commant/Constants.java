@@ -10,12 +10,20 @@ import java.util.Map;
  * @date 2018-10-18
  */
 public class Constants {
+    public static String PLATFORM_IOS = "ios";
+    public static String PLATFORM_ANDROID = "ios";
+
     public static final int DAILY_USER_CLICK_MIN_LIMIT = 2;
     public static final int DAILY_USER_CLICK_MAX_LIMIT = 5;
     public static final String A = "a";
     public static final String B = "b";
     public static final String C = "c";
-    public static final List<String> ONLINE_DSP = new LinkedList<String>(){{
+    public static final List<String> ONLINE_DSP_FEED = new LinkedList<String>(){{
+        add(A);
+        add(B);
+        add(C);
+    }};
+    public static final List<String> ONLINE_DSP_SPLASH = new LinkedList<String>(){{
         add(A);
         add(B);
         add(C);
@@ -25,5 +33,7 @@ public class Constants {
         put(B, 10L);
         put(C, 15L);
     }};
+
     public static final String DSP_REQUEST_PREFIX = "DspRequest:";
+
 }

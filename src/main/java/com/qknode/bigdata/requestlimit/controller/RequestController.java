@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author kaituo
@@ -29,7 +29,7 @@ public class RequestController {
     @ResponseBody
     public JSONObject get(HttpServletRequest request) {
         JSONObject result = new JSONObject();
-        LinkedList<JSONObject> data = requestService.process(request, AdType.SPLASH);
+        List<JSONObject> data = requestService.process(request, AdType.SPLASH);
         result.put("data", data);
         result.put("code", 1000);
         result.put("msg", "ok");
