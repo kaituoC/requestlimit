@@ -33,12 +33,17 @@ public class DspConfig {
      * N : 不可以作为填充广告
      */
     private String isFillAble;
+    /**
+     * Y : 可以作为填充广告
+     * N : 不可以作为填充广告
+     */
+    private String needProcess;
 
     public DspConfig() {
 
     }
 
-    public DspConfig(String dsp, String androidMinVersion, List<String> androidExcludeVersionList, String iosMinVersion, List<String> iosExcludeVersionList, long dayLimit, long hourLimit, long dayLimitPerUser, long hourLimitPerUser, int ctr, String logLevel, String isFillAble) {
+    public DspConfig(String dsp, String androidMinVersion, List<String> androidExcludeVersionList, String iosMinVersion, List<String> iosExcludeVersionList, long dayLimit, long hourLimit, long dayLimitPerUser, long hourLimitPerUser, int ctr, String logLevel, String isFillAble, String needProcess) {
         this.dsp = dsp;
         this.androidMinVersion = androidMinVersion;
         this.androidExcludeVersionList = androidExcludeVersionList;
@@ -51,5 +56,6 @@ public class DspConfig {
         this.ctr = ctr;
         this.logLevel = logLevel;
         this.isFillAble = isFillAble;
+        this.needProcess = needProcess;
     }
 }

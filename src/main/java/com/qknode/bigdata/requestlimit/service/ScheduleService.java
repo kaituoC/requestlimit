@@ -33,9 +33,9 @@ public class ScheduleService {
             Map<String, DspConfig> dspConfigMap = new HashMap<>();
             List<String> androidExcludeVersionList = Lists.newArrayList("1.5.4", "1.6.0");
             List<String> iosExcludeVersionList = Lists.newArrayList("1.5.4", "1.6.0");
-            dspConfigMap.put(Constants.A, new DspConfig(Constants.A, "1.5.3", androidExcludeVersionList, "1.5.0", iosExcludeVersionList, 100L, 10L, 100L, 10L, 300, "Y", "Y"));
-            dspConfigMap.put(Constants.B, new DspConfig(Constants.B, "1.5.3", androidExcludeVersionList, "1.5.0", iosExcludeVersionList, 150L, 15L, 150L, 15L, 350, "Y", "Y"));
-            dspConfigMap.put(Constants.C, new DspConfig(Constants.C, "1.5.3", androidExcludeVersionList, "1.5.0", iosExcludeVersionList, 200L, 20L, 200L, 20L, 280, "Y", "Y"));
+            dspConfigMap.put(Constants.A, new DspConfig(Constants.A, "1.5.3", androidExcludeVersionList, "1.5.0", iosExcludeVersionList, 100L, 10L, 100L, 10L, 300, "Y", "Y", "Y"));
+            dspConfigMap.put(Constants.B, new DspConfig(Constants.B, "1.5.3", androidExcludeVersionList, "1.5.0", iosExcludeVersionList, 150L, 15L, 150L, 15L, 350, "Y", "Y", "Y"));
+            dspConfigMap.put(Constants.C, new DspConfig(Constants.C, "1.5.3", androidExcludeVersionList, "1.5.0", iosExcludeVersionList, 200L, 20L, 200L, 20L, 280, "Y", "Y", "Y"));
             variables.setDspConfigMap(dspConfigMap);
             logger.info("load dspConfig={}", dspConfigMap);
             status = true;
